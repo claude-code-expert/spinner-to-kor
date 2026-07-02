@@ -56,12 +56,15 @@ def _extract(regex: re.Pattern, data: bytes) -> set[str]:
     return found
 
 
+# 매핑된 verb 목록 — 모듈 로드 시 1회 계산
+KNOWN_VERBS = frozenset(
+    v for verbs in _load_patcher().EN_VERBS_BY_LENGTH.values() for v in verbs)
+
+
 def find_unmapped(data: bytes) -> set[str]:
     """두 패턴 교집합 gerund 중 매핑에 없는 verb 집합."""
     candidates = _extract(_JSON_RE, data) & _extract(_NUL_RE, data)
-    patcher = _load_patcher()
-    known = {v for verbs in patcher.EN_VERBS_BY_LENGTH.values() for v in verbs}
-    return candidates - known - KNOWN_UNMAPPED
+    return candidates - KNOWN_VERBS - KNOWN_UNMAPPED
 
 
 def main() -> int:

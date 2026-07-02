@@ -187,7 +187,7 @@ class TestOverlayAndStyle(unittest.TestCase):
         cs.write_text("#!/bin/sh\nexit 0\n")
         cs.chmod(0o755)
 
-    def run_py(self, *args, overlay=None, style=None):
+    def run_py(self, *args, overlay=None):
         env = dict(os.environ, PATH=f"{self.fakebin}:{os.environ['PATH']}")
         if overlay is not None:
             ov = self.tmp / "spinner-map.json"
@@ -195,8 +195,6 @@ class TestOverlayAndStyle(unittest.TestCase):
             env["SPINNER_MAP_FILE"] = str(ov)
         else:
             env["SPINNER_MAP_FILE"] = str(self.tmp / "no-overlay.json")
-        if style:
-            env["SPINNER_STYLE"] = style
         return subprocess.run([sys.executable, str(PY_SCRIPT), *args],
                               capture_output=True, text=True, env=env)
 
@@ -236,17 +234,13 @@ class TestOverlayAndStyle(unittest.TestCase):
         self.assertEqual(r.returncode, 2)
         self.assertEqual(self.bin.read_bytes(), before)
 
-    def test_witty_style_env(self):
-        r = self.run_py(str(self.bin), style="witty")
+    def test_witty_style_cli_flag(self):
+        r = self.run_py("--style", "witty", str(self.bin))
         self.assertEqual(r.returncode, 0, r.stderr)
         data = self.bin.read_bytes()
         self.assertIn("사색중".encode(), data)   # Pondering
         self.assertIn("춤추기".encode(), data)   # Boogieing
-
-    def test_witty_style_cli_flag(self):
-        r = self.run_py("--style", "witty", str(self.bin))
-        self.assertEqual(r.returncode, 0, r.stderr)
-        self.assertIn("소용돌이".encode(), self.bin.read_bytes())  # Whirlpooling
+        self.assertIn("소용돌이".encode(), data)  # Whirlpooling
 
     def test_witty_map_satisfies_invariant(self):
         """위트 178개 전부 byte 길이 일치 — 전수 검증."""
@@ -257,7 +251,7 @@ class TestOverlayAndStyle(unittest.TestCase):
             self.assertEqual(len(en.encode()), len(ko.encode()), f"{en} → {ko!r}")
 
     def test_check_unaffected_by_style(self):
-        r = self.run_py("--check", str(self.bin), style="witty")
+        r = self.run_py("--style", "witty", "--check", str(self.bin))
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertGreater(int(r.stdout.strip()), 0)
 

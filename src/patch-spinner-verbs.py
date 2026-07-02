@@ -228,18 +228,17 @@ def build_verb_map(style: str | None = None) -> dict[str, str]:
     semantic(기본): byte 길이별 풀 라운드로빈. 오버레이 "pools"로 풀 교체 가능.
     witty: 위트 1:1 보존본. "pools"는 무시, "overrides"는 두 스타일 모두 적용.
     """
-    style = style or os.environ.get("SPINNER_STYLE", "semantic")
+    style = style or "semantic"
     if style not in ("semantic", "witty"):
         print(f"알 수 없는 스타일: {style} (semantic|witty)", file=sys.stderr)
         sys.exit(2)
     overlay = load_overlay()
 
-    m: dict[str, str] = {}
     if style == "witty":
-        for length, verbs in EN_VERBS_BY_LENGTH.items():
-            for verb in verbs:
-                m[verb] = _pad_label(WITTY_RAW[verb], length)
+        m = {verb: _pad_label(WITTY_RAW[verb], length)
+             for length, verbs in EN_VERBS_BY_LENGTH.items() for verb in verbs}
     else:
+        m = {}
         pools = dict(KO_LABEL_POOLS)
         for key, labels in overlay.get("pools", {}).items():
             if not (isinstance(labels, list) and labels
@@ -301,10 +300,10 @@ def prune_backups(binary_path: Path, keep_edges: int = 2) -> list[Path]:
     return doomed
 
 
-def validate_map(verb_map: dict[str, str] | None = None) -> None:
+def validate_map() -> None:
     """모든 매핑이 영문 byte 수 == UTF-8 byte 수 invariant를 만족하는지 강제."""
     errors = []
-    for en, ko in (VERB_MAP if verb_map is None else verb_map).items():
+    for en, ko in VERB_MAP.items():
         en_len = len(en.encode("utf-8"))
         ko_len = len(ko.encode("utf-8"))
         if en_len != ko_len:
@@ -405,13 +404,12 @@ def main() -> int:
     parser.add_argument("--check", action="store_true",
                         help="조회 전용 — 영문 sentinel 수를 stdout에 출력, 무수정")
     parser.add_argument("--style", choices=["semantic", "witty"], default=None,
-                        help="매핑 스타일 (기본 semantic, env SPINNER_STYLE)")
+                        help="매핑 스타일 (기본 semantic)")
     args = parser.parse_args()
 
     if args.style:
         VERB_MAP = build_verb_map(style=args.style)
     validate_map()
-    check_only = args.check
 
     if args.binary:
         binary_path = Path(args.binary).expanduser().resolve()
@@ -424,7 +422,7 @@ def main() -> int:
 
     en_count = count_english_verbs(binary_path.read_bytes())
 
-    if check_only:
+    if args.check:
         # 조회 전용 계약: 성공 시에만 stdout에 숫자 1개 (BUG-01류 이중 출력 방지)
         print(en_count)
         return 0
