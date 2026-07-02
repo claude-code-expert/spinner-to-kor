@@ -1,0 +1,16 @@
+# Claude Code 한국어 스피너 자동 재패치 — systemd path unit (Linux/WSL).
+#
+# install.sh 가 {{HOME}}·{{SCRIPTS_DIR}} 를 치환한 뒤
+# ~/.config/systemd/user/spinner-patch.path 로 배치하고
+# `systemctl --user enable --now spinner-patch.path` 로 활성화한다.
+#
+# versions/ 디렉터리 변경 시 spinner-patch.service 를 트리거한다
+# (macOS LaunchAgent 의 WatchPaths 대응).
+[Unit]
+Description=Watch Claude Code versions dir and re-patch spinner verbs
+
+[Path]
+PathModified={{HOME}}/.local/share/claude/versions
+
+[Install]
+WantedBy=default.target

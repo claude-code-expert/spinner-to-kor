@@ -6,6 +6,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/helpers.sh"
 echo "== test_install_e2e.sh =="
 setup_sandbox
 trap teardown_sandbox EXIT
+export SPINNER_PLATFORM=darwin   # 이 스위트는 macOS(LaunchAgent) 경로 고정 검증
 
 BIN="$VERSIONS/2.1.170"
 SNIPPET_TOTAL="$(python3 -c "

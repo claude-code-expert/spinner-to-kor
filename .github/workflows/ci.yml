@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck
+        run: |
+          if ! command -v shellcheck >/dev/null; then
+            sudo apt-get update && sudo apt-get install -y shellcheck || brew install shellcheck
+          fi
+          shellcheck -x install.sh uninstall.sh verify.sh spinner-to-kor \
+            src/platform.sh src/auto-patch-claude.sh src/patch-spinner-verbs.sh
+
+      # fixture 기반 테스트 — launchctl·systemctl·codesign은 helpers.sh가 mock,
+      # $HOME은 tmpdir로 위장하므로 실기 자산을 건드리지 않는다.
+      - name: 전체 테스트
+        run: tests/run.sh

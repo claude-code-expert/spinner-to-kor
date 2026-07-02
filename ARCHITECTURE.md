@@ -136,6 +136,19 @@ Layer A hook의 설치·업데이트·제거는 `src/merge-hooks.py` 한 곳이 
 - 사용자 hook은 같은 matcher라도 교체하지 않는다 — 별도 entry로 공존 (Claude Code는 같은 matcher entry를 모두 실행).
 - 깨진 JSON·비정상 구조에서는 파일을 쓰지 않고 중단. 쓰기는 tmp + atomic replace.
 
+## 플랫폼 추상화 (macOS / Linux / WSL)
+
+Layer C의 감시 메커니즘만 OS별로 다르고 나머지(Layer A/B)는 공통이다. `src/platform.sh`가 이 차이를 캡슐화하고 install/uninstall/verify가 소싱한다:
+
+| | macOS | Linux / WSL |
+|---|---|---|
+| 감시 | LaunchAgent `WatchPaths` (FSEvents) | systemd path unit `PathModified` |
+| 등록 위치 | `~/Library/LaunchAgents/dev.claude-spinner-patch.plist` | `~/.config/systemd/user/spinner-patch.{path,service}` |
+| 활성화 | `launchctl load -w` | `systemctl --user enable --now spinner-patch.path` |
+| 재서명 | `codesign -s -` ad-hoc (필수) | no-op (ELF는 서명 없음) |
+
+`spinner_detect_platform`은 `uname -s`로 판정하고 `SPINNER_PLATFORM` env로 오버라이드 가능 — 테스트가 실기 없이 양 경로를 검증한다. systemd가 없는 WSL1 등에서는 unit 파일만 배치하고 `wsl.conf` 안내 후 수동 패치 경로를 남긴다.
+
 ## 메이저 버전 업그레이드 시
 
 Claude Code가 3.x로 가더라도 Bun compile + Mach-O 구조가 유지되면 같은 패치가 작동한다. 만약 packaging이 압축/암호화로 바뀌면 `~/.claude/logs/spinner-patch.log` 에 `patched=0 errors=N` 이 누적된다 — 그때 매핑 로직 재설계가 필요하다.

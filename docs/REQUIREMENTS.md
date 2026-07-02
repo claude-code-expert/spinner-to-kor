@@ -53,9 +53,9 @@
 
 | ID | 요구사항 | 수용 기준 | 상태 |
 |---|---|---|---|
-| FR-40 | macOS (Apple Silicon·Intel) 지원 | 양 아키텍처 설치 검증 | [M0] arm64 검증 / Intel 검증 [M1] |
-| FR-41 | Linux 지원 — systemd path unit 기반 자동 재패치, 재서명 no-op | Linux에서 install→verify→uninstall 왕복 성공 | [M4] |
-| FR-42 | WSL 지원 (WSL 내 Claude Code 설치본 한정) | WSL Ubuntu에서 FR-41과 동일 기준 | [M4] |
+| FR-40 | macOS (Apple Silicon·Intel) 지원 | 양 아키텍처 설치 검증 | [M0] arm64 검증 / Intel 실기 검증 잔여 |
+| FR-41 | Linux 지원 — systemd path unit 기반 자동 재패치, 재서명 no-op | Linux에서 install→verify→uninstall 왕복 성공 | [M4] **완료** (platform.sh, E2E 16건, 실기 검증은 CI ubuntu) |
+| FR-42 | WSL 지원 (WSL 내 Claude Code 설치본 한정) | WSL Ubuntu에서 FR-41과 동일 기준 | [M4] **완료** (systemctl 부재 폴백 포함, 실기 검증 잔여) |
 
 ## 2. 비기능 요구사항 (NFR)
 
@@ -68,7 +68,7 @@
 | NFR-05 | 관측 가능성 — 자동 동작은 전부 로그에 남는다 (`deferred` 포함) | `spinner-patch.log`에 스캔·패치·skip·연기·에러 기록 | [M0] |
 | NFR-06 | 테스트 가능성 — 실제 Claude 바이너리 없이 핵심 로직 검증 가능 | fixture 기반 테스트 통과, 샌드박스로 실기 격리 | [M1] **완료** (`tests/run.sh`, 72 assertion) |
 | NFR-07 | 문서 정합성 — 문서 기술과 실제 코드·구조 일치 | DOC-01 해소, 릴리스 전 문서 diff 점검 절차 | [M1] **완료** |
-| NFR-08 | CI — 매 커밋에 shellcheck + 매핑 검증 + 단위 테스트 자동 실행 | GitHub Actions green | [M4] (초안은 M1 로컬 스크립트) |
+| NFR-08 | CI — 매 커밋에 shellcheck + 매핑 검증 + 단위 테스트 자동 실행 | GitHub Actions green | [M4] **완료** (ubuntu+macos 매트릭스, `.github/workflows/ci.yml`) |
 
 ## 3. 제약사항
 
@@ -100,4 +100,4 @@
 | M1 (v1.0 안정화 — **코드 완료**, Intel 실기 검증만 잔여) | FR-06, 07, 12, 15(전방 배치), 17, 21, 23, 40(Intel 잔여) / NFR-03, 06, 07 / BUG-01~06, DOC-01 |
 | M2 (v1.1 설치 UX — **완료 2026-07-02**) | FR-14, 16 (FR-15는 M1으로 이동) |
 | M3 (v1.2 매핑 확장 — **완료 2026-07-02**) | FR-31, 32, 33 |
-| M4 (v2.0 플랫폼) | FR-41, 42 / NFR-08 |
+| M4 (v2.0 플랫폼 — **코드 완료 2026-07-02**, Linux/WSL 실기 검증만 잔여) | FR-41, 42 / NFR-08 |

@@ -7,7 +7,7 @@ Claude Code CLI 실행 시 회전하는 영문 동사("Pondering...", "Schleppin
 파일 읽는 중   ← 도구별 라벨 (Read 호출 시)
 ```
 
-> macOS 전용 (LaunchAgent + Mach-O 코드서명 의존). Linux/Windows 미지원.
+> macOS(LaunchAgent + Mach-O ad-hoc 재서명) · Linux/WSL(systemd path unit, 재서명 불요) 지원. 네이티브 Windows 미지원.
 
 ## 빠른 시작
 
@@ -41,44 +41,10 @@ cd claude-code-korean-spinner
 |---|---|---|
 | **A. Hook statusMessage** | 도구별 한국어 라벨("파일 읽는 중" 등 20개) | `~/.claude/settings.json` (`hooks.PreToolUse`에 머지) |
 | **B. 바이너리 verb 치환** | Mach-O 안 영문 verb 178개 → 한국어로 in-place 치환 + ad-hoc 재서명 | `~/.local/share/claude/versions/<버전>` |
-| **C. 자동 재패치** | Claude Code 자동 업데이트로 새 바이너리 도착 시 FSEvents 감시 → 자동 패치 | `~/Library/LaunchAgents/dev.claude-spinner-patch.plist` |
+| **C. 자동 재패치** | Claude Code 자동 업데이트로 새 바이너리 도착 시 감시 → 자동 패치 | macOS: `~/Library/LaunchAgents/dev.claude-spinner-patch.plist` / Linux·WSL: `~/.config/systemd/user/spinner-patch.path` |
 
 자세한 원리는 [ARCHITECTURE.md](./ARCHITECTURE.md), 풀 매핑은 [MAPPING.md](./MAPPING.md).
 
-## 폴더 구조
-
-```
-.
-├── README.md                 ← 이 문서 (한 페이지 요약 + 빠른 시작)
-├── ARCHITECTURE.md           3 레이어 동작 원리 + 매핑 불변식
-├── TROUBLESHOOTING.md        흔한 증상·진단 명령·복구 절차
-├── MAPPING.md                178개 verb 한국어 풀 정책 + 샘플 표
-├── VERSION                   배포 버전 (설치 시 스탬프로 기록)
-├── CHANGELOG.md              변경 이력
-├── spinner-to-kor            단일 CLI 진입점 (install·uninstall·update·verify·patch·status)
-├── install.sh                원클릭 설치·무간섭 업데이트 (--update, --no-patch, --project)
-├── uninstall.sh              제거 (--restore-bin / --project)
-├── verify.sh                 설치 상태 자가 진단 (6개 항목 체크)
-├── src/
-│   ├── patch-spinner-verbs.py        178 verb 매핑 + 바이너리 치환 + 재서명 + --check 본체
-│   ├── patch-spinner-verbs.sh        단일 파일 패치 래퍼
-│   ├── auto-patch-claude.sh          LaunchAgent용 헬퍼 (versions/ 전체 스캔, 쓰기 안정화 대기)
-│   └── merge-hooks.py                settings.json 무간섭 머지/제거 (사용자 hook 보존)
-├── templates/
-│   └── LaunchAgent.plist.template    {{HOME}}·{{HOMEBREW_PREFIX}} 변수화된 배포본
-├── snippets/
-│   └── settings-hooks.json           settings.json 의 PreToolUse 에 머지할 청크
-├── tests/
-│   ├── run.sh                        전체 테스트 실행기
-│   ├── make-fixture.py               가짜 바이너리 생성기 (실바이너리 없이 검증)
-│   ├── test_patch.py · test_merge_hooks.py   Python 단위 테스트
-│   └── shell/                        설치 E2E·회귀 셸 테스트 (샌드박스 격리)
-├── docs/
-│   ├── PRD.md · TRD.md · REQUIREMENTS.md · MILESTONES.md   제품·기술·요구사항·마일스톤
-└── reference/
-    ├── original-author-guide.md      작업 시 작성한 풀 가이드 (개정 이력 포함)
-    └── dev.codevillain.claude-spinner-patch.plist   과거 실사용 설치본 (참고용, 사용 금지)
-```
 
 ## 자주 하는 일
 

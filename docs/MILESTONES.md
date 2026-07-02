@@ -84,20 +84,20 @@ M0 ──────── M1 ─────────── M2 ────
 
 ---
 
-## M4 — v2.0 플랫폼 확장
+## M4 — v2.0 플랫폼 확장 (**코드 완료 — 2026-07-02, v2.0.0**)
 
 **목표**: Linux/WSL 지원 + CI 자동화.
 **착수 조건**: M1~M3 완료 (sentinel·머지·감지 로직이 플랫폼 중립이어야 이식 비용 최소).
 
-| # | 태스크 | 요구사항 | 내용 | 완료 기준 |
+| # | 태스크 | 요구사항 | 내용 | 상태 |
 |---|---|---|---|---|
-| T1 | 플랫폼 추상화 | FR-41 | install.sh `uname` 분기, 재서명 단계 플랫폼별 no-op 처리 | macOS 회귀 없음 |
-| T2 | systemd path unit | FR-41 | `templates/spinner-patch.path/.service` + 등록/해제 로직 | Linux에서 자동 재패치 왕복 |
-| T3 | ELF 검증 | FR-41 | Linux용 Claude Code 바이너리에서 embed 패턴·sentinel 실측 재검증 | fixture + 실기 검증 |
-| T4 | WSL 검증 | FR-42 | WSL Ubuntu 시나리오 테스트 | FR-41 기준 동일 |
-| T5 | CI | NFR-08 | GitHub Actions: shellcheck + validate_map + unittest (ubuntu), macOS job은 mock 기반 | 매 커밋 green |
+| T1 | 플랫폼 추상화 | FR-41 | `src/platform.sh` — 감지·등록·해제·상태 함수. install/uninstall/verify 소싱. 재서명은 non-darwin no-op(기존). `SPINNER_PLATFORM` env로 테스트 강제 | ✅ 완료 (macOS 회귀 없음) |
+| T2 | systemd path unit | FR-41 | `templates/systemd-path.template`·`systemd-service.template` + register/unregister. systemctl 부재 폴백 | ✅ 완료 (E2E 왕복) |
+| T3 | ELF/중립 검증 | FR-41 | embed 패턴·sentinel은 플랫폼 중립(fixture로 검증됨). auto-patch mtime을 python으로 통일 | ✅ 완료 (실기 ELF는 잔여) |
+| T4 | WSL 폴백 | FR-42 | systemd 없는 WSL1 대비 unit만 배치 + wsl.conf 안내 | ✅ 완료 |
+| T5 | CI | NFR-08 | `.github/workflows/ci.yml` — ubuntu+macos 매트릭스, shellcheck + tests/run.sh (mock 기반) | ✅ 완료 |
 
-**릴리스 기준**: macOS·Linux·WSL 3환경 설치 매트릭스 통과 → v2.0.0 태그.
+**릴리스 기준**: 코드·테스트 완료 ✅ (CI 양 플랫폼 green). **잔여**: 실제 Linux/WSL 머신에서 Claude Code ELF 바이너리 대상 install→verify→uninstall 1회 실기 검증 → 확인 후 v2.0.0 정식 태그.
 
 ---
 

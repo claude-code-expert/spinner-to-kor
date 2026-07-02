@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.0.0 — 2026-07-02 (M4 플랫폼 확장)
+
+- **Linux/WSL 지원** (FR-41/42): `src/platform.sh` 신설 — 자동 재패치 등록/해제/상태를 OS별로 캡슐화. macOS는 LaunchAgent(기존), Linux·WSL은 systemd path unit(`~/.config/systemd/user/spinner-patch.path`). 재서명(codesign)은 non-darwin에서 no-op (ELF는 서명 불요). install/uninstall/verify가 공통 라이브러리 소싱.
+- systemctl 부재(systemd 없는 WSL1 등) 시 unit 파일만 배치하고 `wsl.conf` 안내 — 실패해도 수동 패치 경로 유지.
+- auto-patch mtime 조회를 `stat -f`(BSD)/`stat -c`(GNU) 분기 대신 python으로 통일 (플랫폼 중립).
+- **CI** (NFR-08): GitHub Actions ubuntu+macos 매트릭스 — shellcheck + fixture 테스트. launchctl·systemctl·codesign mock으로 실기 없이 양 플랫폼 경로 검증.
+- 테스트 하네스: 크로스플랫폼 검증용 `SPINNER_PLATFORM` env 도입, `test_platform.sh`(16)·`test_linux_e2e.sh`(16) 추가. 총 160+ assertion.
+
+BREAKING CHANGE: install.sh의 "macOS 전용" 사전 게이트 제거 — 이제 Linux/WSL에서도 설치 진행. macOS 사용자 동작은 불변.
+
 ## 1.2.0 — 2026-07-02 (M3 매핑 확장)
 
 - **신규 verb 자동 감지** (FR-31): `src/detect-verbs.py` — 두 embed 패턴(JSON+NUL 경계) 교집합 gerund만 후보로 삼아 오탐 차단. 자동 재패치 성공 시 함께 실행되어 미매핑 발견 시 로그에 `WARN unmapped=N`.

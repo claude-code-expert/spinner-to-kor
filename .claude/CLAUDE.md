@@ -28,6 +28,7 @@ Claude Code CLI의 스피너 영문 verb 178개("Pondering...", "Schlepping..." 
 | `src/patch-spinner-verbs.py` | 매핑 정의(`EN_VERBS_BY_LENGTH`, `KO_LABEL_POOLS`) + 치환 + 백업/prune + ad-hoc 재서명 + `--check`(다중 sentinel 판정) 본체 |
 | `src/merge-hooks.py` | settings.json 무간섭 머지/제거 단일 소스 — 마커(`# spinner-to-kor`) + 레거시 라벨 폴백 |
 | `src/detect-verbs.py` | 미매핑 신규 verb 감지 — 양패턴 교집합 gerund, auto-patch가 `WARN unmapped=N` 경보 |
+| `src/platform.sh` | 플랫폼 추상화 — 자동 재패치 등록/해제/상태 (macOS LaunchAgent / Linux·WSL systemd). install/uninstall/verify 소싱 |
 | `src/patch-spinner-verbs.sh` | 단일 바이너리 패치 래퍼 (탐지·안내만, 백업은 py 책임) |
 | `src/auto-patch-claude.sh` | LaunchAgent 헬퍼 — versions/ 전체 스캔, mtime 안정화 대기, idempotent |
 | `install.sh` / `uninstall.sh` / `verify.sh` | 설치·무간섭 업데이트(`--update`)·제거·6항목 자가진단 |
@@ -46,6 +47,8 @@ Claude Code CLI의 스피너 영문 verb 178개("Pondering...", "Schlepping..." 
 - settings.json 머지/제거는 `src/merge-hooks.py`만 통해서 한다. 우리 hook 마커는 `command` 안 `# spinner-to-kor` 주석 — snippet에서 지우지 말 것. `LEGACY_LABELS`는 과거 배포본 고정값이므로 새 라벨 추가 금지.
 - 바이너리 백업은 `patch-spinner-verbs.py` 한 곳만 생성 (셸 래퍼 백업 금지 — BUG-05). 백업명 `<binary>.bak.<YYYYmmdd-HHMMSS>`, 가장 오래된 .bak = 깨끗한 원본, 보존 정책은 원본+최신 2개.
 - sentinel 정의는 py의 `SENTINEL_VERBS` 한 곳 — 셸에서 자체 grep 금지.
+- 자동 재패치(LaunchAgent/systemd) 관련 로직은 `src/platform.sh`만 통해서 — install/uninstall/verify가 직접 launchctl/systemctl 호출 금지. 테스트는 `SPINNER_PLATFORM` env로 강제.
+- 플랫폼 분기 시 macOS(BSD)·Linux(GNU) 유틸 차이 주의 — `stat -f`/`stat -c` 대신 python 사용(auto-patch 선례).
 
 ## 자주 쓰는 명령
 

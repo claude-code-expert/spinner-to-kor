@@ -56,11 +56,12 @@ for bin in "$VERSIONS_DIR"/*; do
   esac
 
   # 쓰기 안정화 — 최근 10초 내 변경된 파일만 대기·재확인 (BUG-04)
+  # mtime은 python으로 조회 (macOS `stat -f` / GNU `stat -c` 분기 회피, 플랫폼 중립)
   now="$(date +%s)"
-  mtime="$(stat -f %m "$bin" 2>/dev/null || echo 0)"
+  mtime="$(python3 -c "import os,sys;print(int(os.path.getmtime(sys.argv[1])))" "$bin" 2>/dev/null || echo 0)"
   if (( now - mtime < 10 )); then
     sleep "$SETTLE_SECS"
-    mtime2="$(stat -f %m "$bin" 2>/dev/null || echo -1)"
+    mtime2="$(python3 -c "import os,sys;print(int(os.path.getmtime(sys.argv[1])))" "$bin" 2>/dev/null || echo -1)"
     if [[ "$mtime" != "$mtime2" ]]; then
       log "쓰기 진행 중 — 연기: $(basename "$bin") (다음 트리거에서 재시도)"
       deferred=$((deferred + 1))

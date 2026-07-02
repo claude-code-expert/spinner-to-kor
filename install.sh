@@ -26,7 +26,6 @@ SNIPPETS_DIR="$REPO_DIR/snippets"
 SCRIPTS_DEST="$HOME/.claude/scripts"
 LOGS_DEST="$HOME/.claude/logs"
 SETTINGS="$HOME/.claude/settings.json"
-PLIST_DEST="$HOME/Library/LaunchAgents/dev.claude-spinner-patch.plist"
 STAMP="$SCRIPTS_DEST/.spinner-to-kor-version"
 REPO_VERSION="$(cat "$REPO_DIR/VERSION")"
 
@@ -104,10 +103,10 @@ fi
 # ───────────────────────────────────────────────────────────
 bold "== 사전 점검 =="
 
-if [[ "$(uname -s)" != "Darwin" ]]; then
-  red "macOS 전용입니다. (LaunchAgent + Mach-O 코드서명 의존)"
-  exit 2
-fi
+# 플랫폼 추상화 로드 (자동 재패치 등록/해제/상태)
+# shellcheck source=src/platform.sh
+source "$SRC_DIR/platform.sh"
+PLATFORM="$(spinner_detect_platform)"
 
 if ! command -v claude >/dev/null 2>&1; then
   red "claude 명령어를 PATH에서 찾을 수 없습니다. Claude Code를 먼저 설치하세요."
@@ -119,17 +118,18 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 2
 fi
 
-# Homebrew prefix 자동 감지 (LaunchAgent plist 안 PATH 환경변수용)
+# Homebrew prefix 자동 감지 (macOS LaunchAgent plist 안 PATH 환경변수용)
 if [[ -x /opt/homebrew/bin/brew ]]; then
   HOMEBREW_PREFIX="/opt/homebrew"
 elif [[ -x /usr/local/bin/brew ]]; then
   HOMEBREW_PREFIX="/usr/local"
 else
   HOMEBREW_PREFIX="/usr/local"
-  yel "Homebrew를 찾지 못해 prefix를 /usr/local 으로 가정합니다."
+  [[ "$PLATFORM" == "darwin" ]] && yel "Homebrew를 찾지 못해 prefix를 /usr/local 으로 가정합니다."
 fi
+export HOMEBREW_PREFIX
 
-green "✓ macOS, claude, python3, Homebrew prefix=$HOMEBREW_PREFIX"
+green "✓ $PLATFORM, claude, python3"
 
 # 기존 설치 감지 → 무간섭 업데이트 모드 안내
 PREV_VERSION="$(cat "$STAMP" 2>/dev/null || echo "")"
@@ -144,11 +144,11 @@ fi
 # ───────────────────────────────────────────────────────────
 bold "== 1) ~/.claude/scripts/ 에 패치 스크립트 배치 =="
 mkdir -p "$SCRIPTS_DEST" "$LOGS_DEST"
-for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py detect-verbs.py; do
+for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py detect-verbs.py platform.sh; do
   cp -p "$SRC_DIR/$f" "$SCRIPTS_DEST/$f"
   chmod +x "$SCRIPTS_DEST/$f"
 done
-green "✓ 5개 스크립트 복사 완료"
+green "✓ 6개 스크립트 복사 완료"
 
 # ───────────────────────────────────────────────────────────
 # 2. settings.json hooks 머지
@@ -170,41 +170,14 @@ fi
 green "✓ hooks.PreToolUse 무간섭 머지 완료"
 
 # ───────────────────────────────────────────────────────────
-# 3. LaunchAgent 등록
+# 3. 자동 재패치 등록 (macOS: LaunchAgent / Linux·WSL: systemd path unit)
 # ───────────────────────────────────────────────────────────
-bold "== 3) LaunchAgent 등록 (FSEvents 기반 자동 재패치) =="
-mkdir -p "$(dirname "$PLIST_DEST")"
-
-# 구버전 계정별 라벨(dev.<username>.claude-spinner-patch) 마이그레이션 —
-# 새 라벨과 중복 로드되어 같은 디렉터리를 두 에이전트가 감시하는 것 방지 (FR-17)
-for legacy in "$HOME/Library/LaunchAgents"/dev.*.claude-spinner-patch.plist; do
-  [[ -f "$legacy" ]] || continue
-  [[ "$legacy" == "$PLIST_DEST" ]] && continue
-  launchctl unload "$legacy" 2>/dev/null || true
-  rm -f "$legacy"
-  yel "구버전 LaunchAgent 마이그레이션(제거): $(basename "$legacy")"
-done
-sed -e "s|{{HOME}}|$HOME|g" \
-    -e "s|{{HOMEBREW_PREFIX}}|$HOMEBREW_PREFIX|g" \
-    "$TEMPLATES_DIR/LaunchAgent.plist.template" > "$PLIST_DEST"
-green "✓ plist 생성: $PLIST_DEST"
-
-# 이미 로드돼 있으면 unload 후 재로드 (멱등)
-launchctl unload "$PLIST_DEST" 2>/dev/null || true
-launchctl load -w "$PLIST_DEST"
-# load 직후 list 반영이 지연될 수 있어 잠시 재시도 (거짓 실패 방지)
-LOADED=0
-for _ in 1 2 3; do
-  if launchctl list | grep -q dev.claude-spinner-patch; then
-    LOADED=1
-    break
-  fi
-  sleep 1
-done
-if [[ "$LOADED" == "1" ]]; then
-  green "✓ LaunchAgent 로드 완료"
+bold "== 3) 자동 재패치 등록 ($PLATFORM) =="
+spinner_register_autopatch "$SCRIPTS_DEST" "$TEMPLATES_DIR"
+if [[ "$(spinner_autopatch_loaded)" == "1" ]]; then
+  green "✓ 자동 재패치 활성화 완료"
 else
-  red "LaunchAgent 로드 실패. 'launchctl load -w \"$PLIST_DEST\"' 수동 실행 필요"
+  yel "자동 재패치가 아직 비활성 상태입니다 (위 안내 참고). 수동 패치는 계속 가능합니다."
 fi
 
 # ───────────────────────────────────────────────────────────

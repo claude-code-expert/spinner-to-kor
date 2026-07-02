@@ -32,12 +32,16 @@ done
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPTS_DEST="$HOME/.claude/scripts"
 SETTINGS="$HOME/.claude/settings.json"
-PLIST_DEST="$HOME/Library/LaunchAgents/dev.claude-spinner-patch.plist"
-LEGACY_PLIST="$HOME/Library/LaunchAgents/dev.codevillain.claude-spinner-patch.plist"
 
 # 머지/제거 로직 단일 소스 — repo 사본 우선, 없으면 설치본 폴백
 MERGE_PY="$REPO_DIR/src/merge-hooks.py"
 [[ -f "$MERGE_PY" ]] || MERGE_PY="$SCRIPTS_DEST/merge-hooks.py"
+
+# 플랫폼 추상화 (자동 재패치 해제) — repo 사본 우선, 없으면 설치본 폴백
+PLATFORM_SH="$REPO_DIR/src/platform.sh"
+[[ -f "$PLATFORM_SH" ]] || PLATFORM_SH="$SCRIPTS_DEST/platform.sh"
+# shellcheck source=src/platform.sh
+source "$PLATFORM_SH"
 
 bold()  { printf "\033[1m%s\033[0m\n" "$*"; }
 green() { printf "\033[32m%s\033[0m\n" "$*"; }
@@ -64,15 +68,10 @@ if [[ "$PROJECT_MODE" == "1" ]]; then
   exit 0
 fi
 
-# 1. LaunchAgent 제거 (신규/구버전 라벨 모두)
-bold "== 1) LaunchAgent unload + 제거 =="
-for p in "$PLIST_DEST" "$LEGACY_PLIST"; do
-  if [[ -f "$p" ]]; then
-    launchctl unload "$p" 2>/dev/null || true
-    rm -f "$p"
-    green "✓ 제거: $p"
-  fi
-done
+# 1. 자동 재패치 해제 (macOS: LaunchAgent / Linux·WSL: systemd unit)
+bold "== 1) 자동 재패치 해제 ($(spinner_detect_platform)) =="
+spinner_unregister_autopatch
+green "✓ 자동 재패치 해제 완료"
 
 # 2. hooks 청크만 settings.json에서 제거 (백업 보존)
 bold "== 2) settings.json 에서 한국어 hook 청크 제거 =="
@@ -88,7 +87,7 @@ fi
 
 # 3. 스크립트 삭제
 bold "== 3) ~/.claude/scripts/ 한국어 스피너 스크립트 제거 =="
-for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py detect-verbs.py; do
+for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py detect-verbs.py platform.sh; do
   if [[ -f "$SCRIPTS_DEST/$f" ]]; then
     rm -f "$SCRIPTS_DEST/$f"
     green "✓ 삭제: $f"

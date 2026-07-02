@@ -1,0 +1,10 @@
+# Claude Code 한국어 스피너 자동 재패치 — systemd service unit (Linux/WSL).
+#
+# spinner-patch.path 가 versions/ 변경을 감지하면 이 oneshot 서비스를 실행한다.
+# auto-patch-claude.sh 가 영문 verb 잔존 바이너리만 재패치한다 (idempotent).
+[Unit]
+Description=Patch Claude Code spinner verbs to Korean
+
+[Service]
+Type=oneshot
+ExecStart={{SCRIPTS_DIR}}/auto-patch-claude.sh

@@ -37,6 +37,7 @@ setup_sandbox() {
            "$HOME/Library/LaunchAgents" "$FAKEBIN"
   export PATH="$FAKEBIN:$HOME/.local/bin:$PATH"
   export LAUNCHCTL_LOG="$SANDBOX/launchctl.log"
+  export SYSTEMCTL_LOG="$SANDBOX/systemctl.log"
 
   cat > "$FAKEBIN/launchctl" <<'EOF'
 #!/usr/bin/env bash
@@ -44,8 +45,14 @@ echo "launchctl $*" >> "${LAUNCHCTL_LOG:-/dev/null}"
 if [[ "${1:-}" == "list" ]]; then printf -- '-\t0\tdev.claude-spinner-patch\n'; fi
 exit 0
 EOF
+  cat > "$FAKEBIN/systemctl" <<'EOF'
+#!/usr/bin/env bash
+echo "systemctl $*" >> "${SYSTEMCTL_LOG:-/dev/null}"
+if [[ "$*" == *is-active* ]]; then echo "active"; fi
+exit 0
+EOF
   printf '#!/bin/sh\nexit 0\n' > "$FAKEBIN/codesign"
-  chmod +x "$FAKEBIN/launchctl" "$FAKEBIN/codesign"
+  chmod +x "$FAKEBIN/launchctl" "$FAKEBIN/systemctl" "$FAKEBIN/codesign"
 
   python3 "$REPO_DIR/tests/make-fixture.py" "$VERSIONS/2.1.170" >/dev/null
   ln -s "$VERSIONS/2.1.170" "$HOME/.local/bin/claude"

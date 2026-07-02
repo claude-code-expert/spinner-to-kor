@@ -4,7 +4,7 @@
 # 6개 항목을 확인하고 각각에 ✓ / ✗ 마크와 함께 출력한다.
 #   1. 활성 바이너리 경로
 #   2. 활성 바이너리의 영문 verb 잔존 수 (0이면 패치됨)
-#   3. LaunchAgent 로드 상태
+#   3. 자동 재패치 (LaunchAgent / systemd) 상태
 #   4. settings.json 에 한국어 hook 존재
 #   5. 최근 패치 로그
 #   6. 설치본 버전 == repo 버전
@@ -14,6 +14,11 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # 미패치 판정 단일 소스 — repo 사본 우선, 없으면 설치본 폴백 (FR-07)
 PY_PATCHER="$REPO_DIR/src/patch-spinner-verbs.py"
 [[ -f "$PY_PATCHER" ]] || PY_PATCHER="$HOME/.claude/scripts/patch-spinner-verbs.py"
+# 플랫폼 추상화 — repo 사본 우선, 없으면 설치본 폴백
+PLATFORM_SH="$REPO_DIR/src/platform.sh"
+[[ -f "$PLATFORM_SH" ]] || PLATFORM_SH="$HOME/.claude/scripts/platform.sh"
+# shellcheck source=src/platform.sh
+source "$PLATFORM_SH"
 
 bold()  { printf "\033[1m%s\033[0m\n" "$*"; }
 ok()    { printf "  \033[32m✓\033[0m %s\n" "$*"; }
@@ -47,15 +52,18 @@ if [[ -n "$BIN" && -f "$BIN" ]]; then
   fi
 fi
 
-# 3. LaunchAgent
-bold "[3] LaunchAgent"
-if launchctl list 2>/dev/null | grep -q 'dev.claude-spinner-patch\|dev.codevillain.claude-spinner-patch'; then
-  STATUS_LINE="$(launchctl list | grep -E 'dev\.(claude-spinner-patch|codevillain\.claude-spinner-patch)')"
-  ok "로드됨"
-  info "$STATUS_LINE"
+# 3. 자동 재패치 (macOS: LaunchAgent / Linux·WSL: systemd path unit)
+PLATFORM="$(spinner_detect_platform)"
+bold "[3] 자동 재패치 ($PLATFORM)"
+if [[ "$(spinner_autopatch_loaded)" == "1" ]]; then
+  ok "활성화됨"
 else
-  ng "미로드"
-  info "재로드: launchctl load -w ~/Library/LaunchAgents/dev.claude-spinner-patch.plist"
+  ng "비활성"
+  if [[ "$PLATFORM" == "darwin" ]]; then
+    info "재로드: launchctl load -w ~/Library/LaunchAgents/dev.claude-spinner-patch.plist"
+  else
+    info "재활성: systemctl --user enable --now spinner-patch.path"
+  fi
 fi
 
 # 4. settings.json hooks
