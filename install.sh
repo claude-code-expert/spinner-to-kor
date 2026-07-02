@@ -2,9 +2,12 @@
 # Claude Code 한국어 스피너 — 원클릭 설치·업데이트.
 #
 # 사용:
-#   ./install.sh             # 일반 설치 (기설치 상태면 자동으로 무간섭 업데이트)
-#   ./install.sh --update    # 명시적 업데이트 (동작 동일, 버전 리포트 출력)
-#   ./install.sh --no-patch  # 바이너리 패치 건너뜀 (hooks·LaunchAgent만)
+#   ./install.sh                  # 전역 설치 (기설치 상태면 자동으로 무간섭 업데이트)
+#   ./install.sh --update         # 명시적 업데이트 (동작 동일, 버전 리포트 출력)
+#   ./install.sh --no-patch       # 바이너리 패치 건너뜀 (hooks·LaunchAgent만)
+#   ./install.sh --project [DIR]  # 프로젝트 스코프 — DIR/.claude/settings.json 에
+#                                 #   Layer A(hook)만 머지 (기본 DIR=$PWD).
+#                                 #   Layer B/C는 머신 전역 자원이라 건드리지 않음
 #
 # 동작 (전 단계 멱등 — 기존 설치·사용자 설정 무간섭):
 #   1) ~/.claude/scripts/ 에 패치·머지 스크립트 4개 복사
@@ -28,17 +31,73 @@ STAMP="$SCRIPTS_DEST/.spinner-to-kor-version"
 REPO_VERSION="$(cat "$REPO_DIR/VERSION")"
 
 PATCH_BINARY=1
-for arg in "$@"; do
-  case "$arg" in
+PROJECT_MODE=0
+PROJECT_DIR=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --no-patch) PATCH_BINARY=0 ;;
     --update)   : ;;  # 설치와 동일 경로 — 아래 버전 리포트로만 구분
+    --project)
+      PROJECT_MODE=1
+      if [[ $# -ge 2 && "$2" != --* ]]; then
+        PROJECT_DIR="$2"
+        shift
+      fi
+      ;;
+    *)
+      printf "\033[31m알 수 없는 옵션: %s\033[0m\n" "$1" >&2
+      exit 2
+      ;;
   esac
+  shift
 done
 
 bold()  { printf "\033[1m%s\033[0m\n" "$*"; }
 green() { printf "\033[32m%s\033[0m\n" "$*"; }
 red()   { printf "\033[31m%s\033[0m\n" "$*" >&2; }
 yel()   { printf "\033[33m%s\033[0m\n" "$*"; }
+
+# ───────────────────────────────────────────────────────────
+# 프로젝트 스코프 — Layer A(hook)만, 전역 자산 무접촉 (FR-14)
+# ───────────────────────────────────────────────────────────
+if [[ "$PROJECT_MODE" == "1" ]]; then
+  PROJECT_DIR="${PROJECT_DIR:-$PWD}"
+  bold "== 프로젝트 스코프 설치 — Layer A(hook)만 =="
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    red "python3 가 필요합니다."
+    exit 2
+  fi
+  if [[ ! -d "$PROJECT_DIR" ]]; then
+    red "프로젝트 디렉터리 없음: $PROJECT_DIR"
+    exit 2
+  fi
+
+  PROJ_SETTINGS="$PROJECT_DIR/.claude/settings.json"
+  if [[ -f "$PROJ_SETTINGS" ]]; then
+    TS="$(date +%Y%m%d-%H%M%S)"
+    cp -p "$PROJ_SETTINGS" "${PROJ_SETTINGS}.bak.${TS}"
+    yel "백업: ${PROJ_SETTINGS}.bak.${TS}"
+  fi
+
+  if ! python3 "$SRC_DIR/merge-hooks.py" install \
+        --settings "$PROJ_SETTINGS" --snippet "$SNIPPETS_DIR/settings-hooks.json"; then
+    red "프로젝트 settings.json 머지 실패 — 파일은 변경되지 않았습니다."
+    exit 2
+  fi
+  green "✓ 프로젝트 hook 설치 완료: $PROJ_SETTINGS"
+
+  if [[ -f "$STAMP" ]]; then
+    green "✓ 전역 레이어(B: 바이너리 verb, C: 자동 재패치)는 이미 설치되어 있습니다."
+  else
+    yel "전역 레이어(B/C) 미설치 — 스피너 verb 한국어화는 './install.sh' 전역 설치가 필요합니다."
+    yel "  (프로젝트 설치는 도구별 한국어 라벨(Layer A)만 제공합니다)"
+  fi
+
+  echo
+  bold "프로젝트 설치 완료. 이 프로젝트에서 새 claude 세션을 열어 확인하세요."
+  exit 0
+fi
 
 # ───────────────────────────────────────────────────────────
 # 사전 점검

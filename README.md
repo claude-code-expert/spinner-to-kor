@@ -19,6 +19,14 @@ cd claude-code-korean-spinner
 
 새 터미널에서 `claude` 실행 → 스피너에 한국어가 보이면 성공.
 
+특정 프로젝트에만 도구 라벨(Layer A)을 적용하려면:
+
+```bash
+./install.sh --project /path/to/project   # 생략 시 현재 디렉터리
+```
+
+바이너리 verb 한국어화(Layer B/C)는 머신 전역 자원이라 전역 설치(`./install.sh`)가 필요합니다.
+
 ## 무엇이 설치되는가
 
 3 레이어가 동시에 동작해 결함을 상호 보완합니다.
@@ -71,6 +79,7 @@ cd claude-code-korean-spinner
 |---|---|
 | 설치 상태 점검 | `./verify.sh` |
 | **이 도구를 새 버전으로 업데이트** | `git pull && ./install.sh --update` — 기존 설치·사용자 설정 무간섭, 재설치·삭제 불필요 |
+| 특정 프로젝트에만 hook 설치/제거 | `./install.sh --project [DIR]` / `./uninstall.sh --project [DIR]` — 전역 설정 무접촉 |
 | Claude Code 자동 업데이트 후 영문 verb가 보임 | `~/.claude/scripts/auto-patch-claude.sh` 수동 실행 |
 | 특정 바이너리만 패치 | `~/.claude/scripts/patch-spinner-verbs.sh /path/to/binary` |
 | 패치 여부만 조회 (수정 없음) | `python3 src/patch-spinner-verbs.py --check /path/to/binary` |

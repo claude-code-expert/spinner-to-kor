@@ -51,8 +51,9 @@ Claude Code CLI의 스피너 영문 verb 178개("Pondering...", "Schlepping..." 
 ```bash
 tests/run.sh                                   # 전체 테스트 (매핑 검증 포함)
 ./verify.sh                                    # 설치 상태 6항목 점검
-./install.sh [--update|--no-patch]             # 설치·무간섭 업데이트
-./uninstall.sh [--restore-bin]                 # 제거 (+바이너리 영문 복원)
+./install.sh [--update|--no-patch]             # 전역 설치·무간섭 업데이트
+./install.sh --project [DIR]                   # 프로젝트 스코프 (Layer A만)
+./uninstall.sh [--restore-bin|--project [DIR]] # 제거 (+바이너리 영문 복원 / 프로젝트만)
 python3 src/patch-spinner-verbs.py --check <bin>   # 패치 여부 조회 (수정 없음)
 ```
 
