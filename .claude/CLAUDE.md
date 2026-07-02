@@ -49,6 +49,7 @@ Claude Code CLI의 스피너 영문 verb 178개("Pondering...", "Schlepping..." 
 ## 자주 쓰는 명령
 
 ```bash
+./spinner-to-kor <install|uninstall|update|verify|patch|status>   # 단일 진입점
 tests/run.sh                                   # 전체 테스트 (매핑 검증 포함)
 ./verify.sh                                    # 설치 상태 6항목 점검
 ./install.sh [--update|--no-patch]             # 전역 설치·무간섭 업데이트

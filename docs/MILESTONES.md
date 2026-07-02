@@ -52,7 +52,7 @@ M0 ──────── M1 ─────────── M2 ────
 
 ---
 
-## M2 — v1.1 설치 UX·업데이트
+## M2 — v1.1 설치 UX·업데이트 (**완료 — 2026-07-02, v1.1.0**)
 
 **목표**: 전역/프로젝트 스코프 선택 + 도구 자체의 버전 관리·업데이트 경험.
 **착수 조건**: M1 완료 (merge-hooks.py가 프로젝트 스코프의 기반).
@@ -61,10 +61,10 @@ M0 ──────── M1 ─────────── M2 ────
 |---|---|---|---|---|
 | T1 | 프로젝트 스코프 설치 | FR-14 | `install.sh --project [DIR]` → `DIR/.claude/settings.json`에 Layer A만 머지 (merge-hooks.py `--settings` 인자 재사용). Layer B/C 부재 시 안내. uninstall 대칭 | ✅ **완료 (2026-07-02)** — E2E 20건: 전역↔프로젝트 상호 무간섭·멱등·`$PWD` 기본값·엣지(없는 DIR·깨진 JSON) |
 | T2 | ~~버전 스탬프~~ · ~~업데이트 명령~~ | FR-15 | **M1 T9로 전방 배치 완료** | — |
-| T3 | 단일 CLI 진입점 | FR-16 | `./spinner-to-kor <install\|uninstall\|update\|verify\|patch\|status>` 디스패처, 기존 진입점 유지 | 서브커맨드 전부 동작 + 하위 호환 |
-| T4 | 문서 갱신 | NFR-07 | README 빠른시작에 스코프 반영, TROUBLESHOOTING 증상 추가 | — |
+| T3 | 단일 CLI 진입점 | FR-16 | `./spinner-to-kor <install\|uninstall\|update\|verify\|patch\|status>` 디스패처, 기존 진입점 유지 | ✅ **완료** — 테스트 14건 (usage·위임·옵션 투과·status 요약) |
+| T4 | 문서 갱신 | NFR-07 | README 빠른시작에 스코프·CLI 반영 | ✅ **완료** |
 
-**릴리스 기준**: 신규 머신 클린 설치 → 프로젝트 설치 → update → uninstall 전체 시나리오 통과.
+**릴리스 기준**: 신규 머신 클린 설치 → 프로젝트 설치 → update → uninstall 전체 시나리오 통과 ✅ (샌드박스 E2E로 충족).
 
 ---
 

@@ -14,7 +14,13 @@ Claude Code CLI 실행 시 회전하는 영문 동사("Pondering...", "Schleppin
 ```bash
 git clone <this-repo> claude-code-korean-spinner
 cd claude-code-korean-spinner
-./install.sh
+./install.sh                # 또는: ./spinner-to-kor install
+```
+
+모든 명령은 단일 진입점으로도 쓸 수 있습니다:
+
+```bash
+./spinner-to-kor <install|uninstall|update|verify|patch|status|help>
 ```
 
 새 터미널에서 `claude` 실행 → 스피너에 한국어가 보이면 성공.
@@ -49,8 +55,9 @@ cd claude-code-korean-spinner
 ├── MAPPING.md                178개 verb 한국어 풀 정책 + 샘플 표
 ├── VERSION                   배포 버전 (설치 시 스탬프로 기록)
 ├── CHANGELOG.md              변경 이력
-├── install.sh                원클릭 설치·무간섭 업데이트 (--update, --no-patch)
-├── uninstall.sh              제거 (--restore-bin 으로 바이너리도 영문 복귀)
+├── spinner-to-kor            단일 CLI 진입점 (install·uninstall·update·verify·patch·status)
+├── install.sh                원클릭 설치·무간섭 업데이트 (--update, --no-patch, --project)
+├── uninstall.sh              제거 (--restore-bin / --project)
 ├── verify.sh                 설치 상태 자가 진단 (6개 항목 체크)
 ├── src/
 │   ├── patch-spinner-verbs.py        178 verb 매핑 + 바이너리 치환 + 재서명 + --check 본체

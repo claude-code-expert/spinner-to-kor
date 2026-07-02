@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# spinner-to-kor — 단일 CLI 진입점 (FR-16).
+#
+# 기존 스크립트(install.sh 등)를 서브커맨드로 위임하는 얇은 디스패처.
+# 기존 진입점은 그대로 동작한다 — 이 파일은 명령 표면을 하나로 수렴시키는 용도.
+set -euo pipefail
+
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+usage() {
+  cat <<EOF
+spinner-to-kor — Claude Code 스피너 한국어화
+
+사용: spinner-to-kor <command> [옵션]
+
+commands:
+  install [--no-patch] [--project [DIR]]    전역/프로젝트 설치 (기설치면 무간섭 업데이트)
+  uninstall [--restore-bin] [--project [DIR]]  제거 (+바이너리 영문 복원 / 프로젝트만)
+  update                                    무간섭 업데이트 (install --update 동일)
+  verify                                    설치 상태 6항목 진단
+  patch [BINARY]                            바이너리 수동 패치 (생략 시 자동 탐지)
+  status                                    설치 버전·패치 상태·LaunchAgent 한눈 요약
+  help                                      이 도움말
+
+예:
+  ./spinner-to-kor install                  # 전역 설치
+  ./spinner-to-kor install --project .      # 현재 프로젝트에 hook만
+  ./spinner-to-kor update                   # 새 버전 반영 (기존 설치 무간섭)
+EOF
+}
+
+status_cmd() {
+  local repo_v installed_v bin en_count agent
+  repo_v="$(cat "$REPO_DIR/VERSION" 2>/dev/null || echo "?")"
+  installed_v="$(cat "$HOME/.claude/scripts/.spinner-to-kor-version" 2>/dev/null || echo "미설치")"
+  printf "버전:        repo %s / 설치본 %s\n" "$repo_v" "$installed_v"
+
+  bin="$(readlink -f "$(command -v claude 2>/dev/null)" 2>/dev/null || true)"
+  if [[ -n "$bin" && -f "$bin" ]]; then
+    en_count="$(python3 "$REPO_DIR/src/patch-spinner-verbs.py" --check "$bin" 2>/dev/null)" || en_count=""
+    if [[ "$en_count" == "0" ]]; then
+      printf "바이너리:    패치됨 (%s)\n" "$(basename "$bin")"
+    elif [[ -n "$en_count" ]]; then
+      printf "바이너리:    미패치 — 영문 sentinel %s건 (%s)\n" "$en_count" "$(basename "$bin")"
+    else
+      printf "바이너리:    판정 실패 (%s)\n" "$bin"
+    fi
+  else
+    printf "바이너리:    claude 탐지 실패\n"
+  fi
+
+  if launchctl list 2>/dev/null | grep -q 'claude-spinner-patch'; then
+    agent="로드됨"
+  else
+    agent="미로드"
+  fi
+  printf "LaunchAgent: %s\n" "$agent"
+}
+
+CMD="${1:-}"
+if [[ -z "$CMD" ]]; then
+  usage >&2
+  exit 2
+fi
+shift
+
+case "$CMD" in
+  install)        exec "$REPO_DIR/install.sh" "$@" ;;
+  uninstall)      exec "$REPO_DIR/uninstall.sh" "$@" ;;
+  update)         exec "$REPO_DIR/install.sh" --update "$@" ;;
+  verify)         exec "$REPO_DIR/verify.sh" "$@" ;;
+  patch)          exec "$REPO_DIR/src/patch-spinner-verbs.sh" "$@" ;;
+  status)         status_cmd ;;
+  help|-h|--help) usage ;;
+  *)
+    printf "알 수 없는 명령: %s\n\n" "$CMD" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

@@ -1,8 +1,9 @@
 # Changelog
 
-## Unreleased (M2 진행 중)
+## 1.1.0 — 2026-07-02 (M2 설치 UX)
 
 - **프로젝트 스코프 설치** (FR-14): `install.sh --project [DIR]` / `uninstall.sh --project [DIR]` — 해당 프로젝트 `.claude/settings.json`에 Layer A(hook)만 무간섭 머지/제거. DIR 생략 시 현재 디렉터리. 전역 ↔ 프로젝트 상호 무간섭 (E2E 20건).
+- **단일 CLI 진입점** (FR-16): `./spinner-to-kor <install|uninstall|update|verify|patch|status|help>` — 기존 스크립트로 위임하는 얇은 디스패처, 기존 진입점 하위 호환 유지. `status`는 버전·패치 상태·LaunchAgent 한눈 요약.
 - install/uninstall 알 수 없는 옵션은 이제 즉시 거부 (오타 침묵 무시 방지).
 
 ## 1.0.0 — 2026-07-02 (M1 안정화)
