@@ -125,6 +125,8 @@ gh release create v2.1.0 --title "v2.1.0" --notes-file <(sed -n '/## 2.1.0/,/## 
 
 release 발행 즉시 기존 사용자의 `spinner-to-kor update` 가 새 버전을 받습니다. release 가 아직 없으면 부트스트랩이 `git clone` 대체 안내를 출력합니다.
 
+전체 절차·버전 정책·롤백·검증은 [docs/release/RELEASE.md](./docs/release/RELEASE.md), 매 릴리스 실행 목록은 [docs/release/CHECKLIST.md](./docs/release/CHECKLIST.md).
+
 ## 오픈소스 배포시 참고
   - hardcoded plist는 reference/ 로 이동 완료 (사용자는 templates/만 보면 됩니다).
   - 부트스트랩은 순수 bash+python3 — Node/npm 의존 없음. `bootstrap.sh` 는 `SPINNER_REPO`·`SPINNER_SOURCE_TARBALL` env 로 포크·오프라인 설치 지원.
