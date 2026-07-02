@@ -35,6 +35,8 @@ Claude Code 스피너 동사(verb)를 의미 있는 한국어 라벨로 in-place
         ~/.local/share/claude/versions/2.1.153
   patch-spinner-verbs.py
 """
+import argparse
+import json
 import os
 import sys
 import shutil
@@ -111,18 +113,163 @@ KO_LABEL_POOLS: dict[int, list[str]] = {
 }
 
 
-def _build_verb_map() -> dict[str, str]:
-    """영문 verb를 byte 길이별 한국어 풀에서 라운드로빈으로 매핑."""
+# 위트 1:1 매핑 (2026-06-18 초기 버전 보존본) — --style witty 로 선택.
+# 패딩(trailing space)은 build 시 자동 계산되므로 원 단어만 기록한다.
+WITTY_RAW: dict[str, str] = {
+    # 6B
+    "Baking": "굽기", "Ebbing": "썰물", "Musing": "사색", "Vibing": "감각",
+    # 7B
+    "Beaming": "환함", "Booping": "톡톡", "Brewing": "끓임", "Bunning": "묶음",
+    "Cooking": "요리", "Flowing": "흐름", "Forging": "단조", "Forming": "형성",
+    "Gusting": "돌풍", "Hashing": "해싱", "Herding": "몰이", "Honking": "경적",
+    "Misting": "안개", "Mulling": "숙고", "Nesting": "둥지", "Stewing": "조림",
+    "Warping": "왜곡", "Working": "작업", "Zesting": "갈기",
+    # 8B
+    "Churning": "휘저", "Clauding": "코딩", "Crafting": "제작", "Creating": "생성",
+    "Doodling": "낙서", "Frosting": "장식", "Grooving": "흥얼", "Hatching": "부화",
+    "Ideating": "발상", "Infusing": "주입", "Ionizing": "이온", "Moseying": "산책",
+    "Noodling": "끼적", "Orbiting": "공전", "Osmosing": "삼투", "Perusing": "정독",
+    "Pouncing": "덮침", "Proofing": "교정", "Puzzling": "고민", "Roosting": "쉼터",
+    "Spinning": "회전", "Swirling": "휘말", "Swooping": "활강", "Thinking": "사고",
+    "Twisting": "비틈", "Waddling": "뒤뚱", "Whirring": "윙윙", "Whisking": "휘젓",
+    "Wibbling": "흔들",
+    # 9B
+    "Actioning": "실행중", "Beboppin'": "박자중", "Billowing": "물결중",
+    "Blanching": "데치기", "Boogieing": "춤추기", "Burrowing": "굴파기",
+    "Cascading": "쏟아짐", "Composing": "작성중", "Computing": "계산중",
+    "Crunching": "처리중", "Drizzling": "흩뿌리", "Effecting": "효과중",
+    "Finagling": "꾀하기", "Galloping": "질주중", "Gitifying": "버전중",
+    "Imagining": "상상중", "Inferring": "추론중", "Mustering": "준비중",
+    "Pondering": "사색중", "Puttering": "만지작", "Sautéing": "볶음중",
+    "Scurrying": "달리기", "Sketching": "스케치", "Smooshing": "뭉치기",
+    "Sprouting": "발아중", "Tempering": "조절중", "Tinkering": "만지기",
+    "Unfurling": "펼치기", "Wandering": "방황중", "Wrangling": "다투기",
+    # 10B
+    "Befuddling": "헷갈중", "Bloviating": "장광설", "Canoodling": "어루만",
+    "Channeling": "전달중", "Coalescing": "융합중", "Cogitating": "사고중",
+    "Concocting": "조합중", "Enchanting": "매혹중", "Fermenting": "발효중",
+    "Flambéing": "플람베", "Flummoxing": "당황중", "Fluttering": "팔랑중",
+    "Frolicking": "장난중", "Garnishing": "장식중", "Generating": "생성중",
+    "Incubating": "부화중", "Levitating": "부양중", "Marinating": "재우는",
+    "Meandering": "굽이굽", "Nebulizing": "성운화", "Nucleating": "핵형성",
+    "Processing": "처리중", "Ruminating": "되새김", "Scampering": "쪼르륵",
+    "Schlepping": "끌고가", "Slithering": "스르륵", "Spelunking": "탐험중",
+    "Symbioting": "공생중", "Thundering": "쾅쾅중", "Undulating": "물결중",
+    "Zigzagging": "지그재",
+    # 11B
+    "Actualizing": "실현중", "Calculating": "계산중", "Catapulting": "발사중",
+    "Cerebrating": "두뇌중", "Channelling": "전달중", "Considering": "고려중",
+    "Cultivating": "재배중", "Deciphering": "해독중", "Determining": "결정중",
+    "Elucidating": "해명중", "Envisioning": "상상중", "Evaporating": "증발중",
+    "Germinating": "발아중", "Harmonizing": "조화중", "Improvising": "즉흥중",
+    "Manifesting": "구현중", "Moonwalking": "춤추기", "Percolating": "우려내",
+    "Pollinating": "수분중", "Propagating": "전파중", "Sublimating": "승화중",
+    "Transmuting": "변환중", "Unravelling": "풀어내",
+    # 12B
+    "Architecting": "구조설계", "Boondoggling": "허튼소리", "Caramelizing": "캐러멜화",
+    "Deliberating": "심사숙고", "Embellishing": "꾸미는중", "Gallivanting": "쏘다니기",
+    "Hyperspacing": "공간이동", "Lollygagging": "꾸물거리", "Newspapering": "기사작성",
+    "Quantumizing": "양자처리", "Reticulating": "그물짜기", "Sock-hopping": "껑충뛰기",
+    "Synthesizing": "결과조합", "Tomfoolering": "장난질중", "Whirlpooling": "소용돌이",
+    # 13B
+    "Accomplishing": "완수하기", "Bootstrapping": "초기화중", "Combobulating": "정리하기",
+    "Contemplating": "곰곰생각", "Crystallizing": "결정화중", "Gesticulating": "몸짓표현",
+    "Jitterbugging": "흥겹게춤", "Orchestrating": "총괄지휘", "Perambulating": "산책하기",
+    "Pontificating": "잘난체중", "Precipitating": "강수발생", "Razzmatazzing": "야단법석",
+    "Transfiguring": "형상변환",
+    # 14B
+    "Choreographing": "안무작성", "Dilly-dallying": "어슬렁대", "Hullaballooing": "와글와글",
+    "Metamorphosing": "탈바꿈중", "Philosophising": "철학사색", "Topsy-turvying": "뒤죽박죽",
+    # 15B
+    "Fiddle-faddling": "꼼지락대기", "Razzle-dazzling": "와르르번쩍",
+    "Recombobulating": "다시정리중",
+    # 16B
+    "Discombobulating": "혼란시키기", "Prestidigitating": "마술부리기",
+    # 17B
+    "Photosynthesizing": "광합성하기",
+    # 18B
+    "Flibbertigibbeting": "쓸데없는수다", "Whatchamacalliting": "이름모를일중",
+}
+
+# 사용자 커스텀 매핑 오버레이 파일 (FR-32)
+DEFAULT_OVERLAY_FILE = Path.home() / ".claude" / "spinner-map.json"
+
+
+def _pad_label(ko: str, target_bytes: int) -> str:
+    """라벨 뒤에 trailing space를 채워 target byte 수에 맞춘다 (초과분은 validate가 거부)."""
+    pad = target_bytes - len(ko.encode("utf-8"))
+    return ko + " " * max(0, pad)
+
+
+def load_overlay() -> dict:
+    """~/.claude/spinner-map.json (SPINNER_MAP_FILE 로 재지정) 로드.
+
+    없으면 빈 dict. 깨진 JSON·비정상 구조면 exit 2 — 조용히 기본값으로
+    패치해 사용자 의도를 무시하는 것보다 명시적 실패가 안전하다.
+    """
+    path = Path(os.environ.get("SPINNER_MAP_FILE", DEFAULT_OVERLAY_FILE))
+    if not path.exists():
+        return {}
+    try:
+        with open(path) as f:
+            overlay = json.load(f)
+    except (json.JSONDecodeError, OSError) as e:
+        print(f"오버레이 파일 오류 ({path}): {e}", file=sys.stderr)
+        sys.exit(2)
+    if not isinstance(overlay, dict):
+        print(f"오버레이 최상위가 객체가 아님: {path}", file=sys.stderr)
+        sys.exit(2)
+    return overlay
+
+
+def build_verb_map(style: str | None = None) -> dict[str, str]:
+    """활성 매핑 생성 — 스타일(semantic/witty) + 사용자 오버레이 적용.
+
+    semantic(기본): byte 길이별 풀 라운드로빈. 오버레이 "pools"로 풀 교체 가능.
+    witty: 위트 1:1 보존본. "pools"는 무시, "overrides"는 두 스타일 모두 적용.
+    """
+    style = style or os.environ.get("SPINNER_STYLE", "semantic")
+    if style not in ("semantic", "witty"):
+        print(f"알 수 없는 스타일: {style} (semantic|witty)", file=sys.stderr)
+        sys.exit(2)
+    overlay = load_overlay()
+
     m: dict[str, str] = {}
-    for length, verbs in EN_VERBS_BY_LENGTH.items():
-        pool = KO_LABEL_POOLS[length]
-        for i, verb in enumerate(verbs):
-            m[verb] = pool[i % len(pool)]
+    if style == "witty":
+        for length, verbs in EN_VERBS_BY_LENGTH.items():
+            for verb in verbs:
+                m[verb] = _pad_label(WITTY_RAW[verb], length)
+    else:
+        pools = dict(KO_LABEL_POOLS)
+        for key, labels in overlay.get("pools", {}).items():
+            if not (isinstance(labels, list) and labels
+                    and all(isinstance(x, str) for x in labels)):
+                print(f"오버레이 pools[{key!r}] 는 비어있지 않은 문자열 배열이어야 함",
+                      file=sys.stderr)
+                sys.exit(2)
+            try:
+                pools[int(key)] = labels
+            except ValueError:
+                print(f"오버레이 pools 키는 byte 수(정수)여야 함: {key!r}", file=sys.stderr)
+                sys.exit(2)
+        for length, verbs in EN_VERBS_BY_LENGTH.items():
+            pool = pools[length]
+            for i, verb in enumerate(verbs):
+                m[verb] = pool[i % len(pool)]
+
+    for en, ko in overlay.get("overrides", {}).items():
+        if en not in m:
+            print(f"오버레이 overrides 에 알 수 없는 verb: {en!r} (오타?)", file=sys.stderr)
+            sys.exit(2)
+        if not isinstance(ko, str):
+            print(f"오버레이 overrides[{en!r}] 는 문자열이어야 함", file=sys.stderr)
+            sys.exit(2)
+        m[en] = _pad_label(ko, len(en.encode("utf-8")))
     return m
 
 
 # 5B "Doing"은 한글 1자(3B)로 의미 부족 → 매핑 제외(영문 유지)
-VERB_MAP: dict[str, str] = _build_verb_map()
+VERB_MAP: dict[str, str] = build_verb_map()
 
 # 미패치 판정 sentinel — 다중화 (Anthropic이 verb 하나를 빼도 감지 유지).
 # 셸 스크립트는 자체 grep 대신 반드시 `--check` 로 이 정의를 사용한다.
@@ -154,10 +301,10 @@ def prune_backups(binary_path: Path, keep_edges: int = 2) -> list[Path]:
     return doomed
 
 
-def validate_map() -> None:
+def validate_map(verb_map: dict[str, str] | None = None) -> None:
     """모든 매핑이 영문 byte 수 == UTF-8 byte 수 invariant를 만족하는지 강제."""
     errors = []
-    for en, ko in VERB_MAP.items():
+    for en, ko in (VERB_MAP if verb_map is None else verb_map).items():
         en_len = len(en.encode("utf-8"))
         ko_len = len(ko.encode("utf-8"))
         if en_len != ko_len:
@@ -251,16 +398,23 @@ def adhoc_sign(binary_path: Path) -> bool:
 
 
 def main() -> int:
+    global VERB_MAP
+
+    parser = argparse.ArgumentParser(description="Claude Code 스피너 verb 한국어 패치")
+    parser.add_argument("binary", nargs="?", help="대상 바이너리 (생략 시 자동 탐지)")
+    parser.add_argument("--check", action="store_true",
+                        help="조회 전용 — 영문 sentinel 수를 stdout에 출력, 무수정")
+    parser.add_argument("--style", choices=["semantic", "witty"], default=None,
+                        help="매핑 스타일 (기본 semantic, env SPINNER_STYLE)")
+    args = parser.parse_args()
+
+    if args.style:
+        VERB_MAP = build_verb_map(style=args.style)
     validate_map()
+    check_only = args.check
 
-    args = sys.argv[1:]
-    check_only = False
-    if args and args[0] == "--check":
-        check_only = True
-        args = args[1:]
-
-    if args:
-        binary_path = Path(args[0]).expanduser().resolve()
+    if args.binary:
+        binary_path = Path(args.binary).expanduser().resolve()
     else:
         binary_path = autodetect_binary()
 

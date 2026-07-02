@@ -21,6 +21,7 @@ PY
 bold "== Python 단위 테스트 =="
 python3 "$REPO_DIR/tests/test_patch.py" || FAILED=1
 python3 "$REPO_DIR/tests/test_merge_hooks.py" || FAILED=1
+python3 "$REPO_DIR/tests/test_detect.py" || FAILED=1
 
 bold "== 셸 테스트 =="
 for t in "$REPO_DIR"/tests/shell/test_*.sh; do

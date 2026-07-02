@@ -47,4 +47,19 @@ sleep 1
 SPINNER_PATCH_SETTLE_SECS=1 "$AUTO"
 assert_eq "0" "$(en_count "$NEW")" "쓰기 완료 후 재스캔 → 패치 성공"
 
+# ── 미매핑 신규 verb → 패치 후 WARN 경보 (FR-31) ────────
+EXTRA="$VERSIONS/2.1.180"
+python3 - "$EXTRA" <<PY
+import importlib.util, sys
+spec = importlib.util.spec_from_file_location("mf", "$REPO_DIR/tests/make-fixture.py")
+m = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(m)
+m.build_fixture(sys.argv[1], extra_verbs=["Zooming"])
+PY
+touch -t 202601010000 "$EXTRA"
+"$AUTO"
+assert_contains "$(tail -5 "$LOG" | tr '\n' ' ')" "unmapped=1" \
+  "미매핑 verb 잔존 → WARN unmapped=1 로그"
+assert_eq "0" "$(en_count "$EXTRA")" "알려진 verb는 정상 패치됨"
+
 report

@@ -144,11 +144,11 @@ fi
 # ───────────────────────────────────────────────────────────
 bold "== 1) ~/.claude/scripts/ 에 패치 스크립트 배치 =="
 mkdir -p "$SCRIPTS_DEST" "$LOGS_DEST"
-for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py; do
+for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py detect-verbs.py; do
   cp -p "$SRC_DIR/$f" "$SCRIPTS_DEST/$f"
   chmod +x "$SCRIPTS_DEST/$f"
 done
-green "✓ 4개 스크립트 복사 완료"
+green "✓ 5개 스크립트 복사 완료"
 
 # ───────────────────────────────────────────────────────────
 # 2. settings.json hooks 머지

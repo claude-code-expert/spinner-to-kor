@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0 — 2026-07-02 (M3 매핑 확장)
+
+- **신규 verb 자동 감지** (FR-31): `src/detect-verbs.py` — 두 embed 패턴(JSON+NUL 경계) 교집합 gerund만 후보로 삼아 오탐 차단. 자동 재패치 성공 시 함께 실행되어 미매핑 발견 시 로그에 `WARN unmapped=N`.
+- **커스텀 매핑 오버레이** (FR-32): `~/.claude/spinner-map.json` — `pools`(풀 교체)·`overrides`(개별 verb 고정, 자동 space 패딩). byte 불변식 위반·오타·깨진 JSON은 패치 거부 + 바이너리 무변경. `SPINNER_MAP_FILE` 로 경로 재지정.
+- **스타일 프리셋** (FR-33): `--style semantic|witty` (env `SPINNER_STYLE`) — 2026-06-18 위트 1:1 매핑 178개를 `WITTY_RAW` 로 데이터화, 패딩 자동 계산, 전수 byte 검증.
+- patch-spinner-verbs.py CLI를 argparse로 정리 (`--check` 계약 불변).
+
 ## 1.1.0 — 2026-07-02 (M2 설치 UX)
 
 - **프로젝트 스코프 설치** (FR-14): `install.sh --project [DIR]` / `uninstall.sh --project [DIR]` — 해당 프로젝트 `.claude/settings.json`에 Layer A(hook)만 무간섭 머지/제거. DIR 생략 시 현재 디렉터리. 전역 ↔ 프로젝트 상호 무간섭 (E2E 20건).

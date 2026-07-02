@@ -20,6 +20,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PY_SCRIPT="$SCRIPT_DIR/patch-spinner-verbs.py"
+DETECT_SCRIPT="$SCRIPT_DIR/detect-verbs.py"
 VERSIONS_DIR="$HOME/.local/share/claude/versions"
 LOG_DIR="$HOME/.claude/logs"
 LOG_FILE="$LOG_DIR/spinner-patch.log"
@@ -85,6 +86,13 @@ for bin in "$VERSIONS_DIR"/*; do
   if python3 "$PY_SCRIPT" "$bin" >> "$LOG_FILE" 2>&1; then
     patched=$((patched + 1))
     log "패치 성공: $(basename "$bin")"
+    # 새 바이너리에 미매핑 신규 verb가 있으면 조기 경보 (FR-31)
+    if [[ -f "$DETECT_SCRIPT" ]]; then
+      unmapped="$(python3 "$DETECT_SCRIPT" --count "$bin" 2>>"$LOG_FILE")" || unmapped=""
+      if [[ -n "$unmapped" && "$unmapped" != "0" ]]; then
+        log "WARN unmapped=$unmapped — 새 verb 감지: 'python3 $DETECT_SCRIPT $bin' 으로 확인 후 매핑 갱신"
+      fi
+    fi
   else
     errors=$((errors + 1))
     log "패치 실패: $(basename "$bin") — py가 원본 복구 수행함, 로그 확인"

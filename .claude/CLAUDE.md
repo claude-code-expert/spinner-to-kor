@@ -27,6 +27,7 @@ Claude Code CLI의 스피너 영문 verb 178개("Pondering...", "Schlepping..." 
 |---|---|
 | `src/patch-spinner-verbs.py` | 매핑 정의(`EN_VERBS_BY_LENGTH`, `KO_LABEL_POOLS`) + 치환 + 백업/prune + ad-hoc 재서명 + `--check`(다중 sentinel 판정) 본체 |
 | `src/merge-hooks.py` | settings.json 무간섭 머지/제거 단일 소스 — 마커(`# spinner-to-kor`) + 레거시 라벨 폴백 |
+| `src/detect-verbs.py` | 미매핑 신규 verb 감지 — 양패턴 교집합 gerund, auto-patch가 `WARN unmapped=N` 경보 |
 | `src/patch-spinner-verbs.sh` | 단일 바이너리 패치 래퍼 (탐지·안내만, 백업은 py 책임) |
 | `src/auto-patch-claude.sh` | LaunchAgent 헬퍼 — versions/ 전체 스캔, mtime 안정화 대기, idempotent |
 | `install.sh` / `uninstall.sh` / `verify.sh` | 설치·무간섭 업데이트(`--update`)·제거·6항목 자가진단 |

@@ -90,6 +90,8 @@ cd claude-code-korean-spinner
 | Claude Code 자동 업데이트 후 영문 verb가 보임 | `~/.claude/scripts/auto-patch-claude.sh` 수동 실행 |
 | 특정 바이너리만 패치 | `~/.claude/scripts/patch-spinner-verbs.sh /path/to/binary` |
 | 패치 여부만 조회 (수정 없음) | `python3 src/patch-spinner-verbs.py --check /path/to/binary` |
+| 신규 미매핑 verb 확인 | `python3 ~/.claude/scripts/detect-verbs.py /path/to/binary` |
+| 라벨 커스텀 / 위트 스타일 | `~/.claude/spinner-map.json` 작성 / `--style witty` — [MAPPING.md](./MAPPING.md) 참고 |
 | 패치 활동 실시간 모니터링 | `tail -f ~/.claude/logs/spinner-patch.log` |
 | 영문 복귀 (테스트용) | `./uninstall.sh --restore-bin` |
 | 전체 테스트 실행 | `tests/run.sh` |

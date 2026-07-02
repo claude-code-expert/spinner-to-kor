@@ -65,6 +65,43 @@ print(json.dumps(m.VERB_MAP, indent=2, ensure_ascii=False))
 
 또는 본 배포본의 [src/patch-spinner-verbs.py](./src/patch-spinner-verbs.py) 의 `EN_VERBS_BY_LENGTH` (영문 원본)와 `KO_LABEL_POOLS` (한국어 풀)를 직접 확인.
 
+## 커스텀 매핑 — 파일만 만들면 끝 (v1.2+)
+
+`~/.claude/spinner-map.json` 을 만들면 코드 수정 없이 라벨을 바꿀 수 있다:
+
+```json
+{
+  "pools": { "9": ["탐색중", "추리중", "궁리중"] },
+  "overrides": { "Pondering": "궁리중" }
+}
+```
+
+- `pools`: 해당 byte 길이 풀 전체 교체 (semantic 스타일에만 적용)
+- `overrides`: 개별 verb 고정 (모든 스타일에 적용). 부족한 byte는 자동 space 패딩
+- byte 불변식 위반·알 수 없는 verb·깨진 JSON → **패치 거부(exit 2), 바이너리 무변경**
+- 파일 위치는 `SPINNER_MAP_FILE` 환경변수로 재지정 가능
+
+## 스타일 프리셋 (v1.2+)
+
+```bash
+python3 ~/.claude/scripts/patch-spinner-verbs.py --style witty <binary>   # 위트 1:1 (아래 §5-옛 보존본)
+python3 ~/.claude/scripts/patch-spinner-verbs.py --style semantic <binary> # 의미 통일 (기본)
+```
+
+환경변수 `SPINNER_STYLE=witty` 로도 지정 가능. 이미 패치된 바이너리는 먼저 백업 복원 필요 (아래 "반영" 참고).
+
+## 신규 verb 자동 감지 (v1.2+)
+
+Claude Code 새 버전이 verb를 추가하면 매핑 밖 영문이 잔존한다. 자동 재패치가 성공할 때마다 감지가 함께 돌고, 미매핑 발견 시 로그에 `WARN unmapped=N` 이 남는다. 수동 확인:
+
+```bash
+python3 ~/.claude/scripts/detect-verbs.py <binary>
+# unmapped=1
+#   Zooming (7 bytes) — EN_VERBS_BY_LENGTH[7] 에 추가 후 백업 복원·재패치
+```
+
+두 embed 패턴(JSON + NUL 경계) **모두**에 등장하는 gerund만 후보로 보므로 일반 문자열("Loading" 류) 오탐이 차단된다.
+
 ## 풀을 직접 바꾸려면
 
 ### 좋은 변경

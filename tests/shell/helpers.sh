@@ -57,7 +57,7 @@ teardown_sandbox() { rm -rf "${SANDBOX:?}"; }
 deploy_scripts() {
   mkdir -p "$HOME/.claude/scripts" "$HOME/.claude/logs"
   local f
-  for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py; do
+  for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py detect-verbs.py; do
     [[ -f "$REPO_DIR/src/$f" ]] && cp -p "$REPO_DIR/src/$f" "$HOME/.claude/scripts/$f"
   done
   chmod +x "$HOME/.claude/scripts/"* 2>/dev/null || true

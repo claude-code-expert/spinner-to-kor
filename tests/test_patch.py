@@ -167,6 +167,101 @@ class TestBackupPolicy(unittest.TestCase):
         self.assertTrue(other.exists())
 
 
+class TestOverlayAndStyle(unittest.TestCase):
+    """FR-32 커스텀 매핑 오버레이 + FR-33 스타일 프리셋.
+
+    계약:
+      - ~/.claude/spinner-map.json (SPINNER_MAP_FILE 로 재지정 가능):
+        {"pools": {"9": [...]}, "overrides": {"Pondering": "궁리중"}}
+      - byte 불변식은 오버레이에도 동일 강제 — 위반 시 exit 2, 바이너리 무변경.
+      - --style witty 는 위트 1:1 매핑(구버전 보존본)으로 패치.
+    """
+
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp(prefix="spinner-ov-"))
+        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.bin = make_fixture.build_fixture(self.tmp / "2.1.170")
+        self.fakebin = self.tmp / "fakebin"
+        self.fakebin.mkdir()
+        cs = self.fakebin / "codesign"
+        cs.write_text("#!/bin/sh\nexit 0\n")
+        cs.chmod(0o755)
+
+    def run_py(self, *args, overlay=None, style=None):
+        env = dict(os.environ, PATH=f"{self.fakebin}:{os.environ['PATH']}")
+        if overlay is not None:
+            ov = self.tmp / "spinner-map.json"
+            ov.write_text(overlay)
+            env["SPINNER_MAP_FILE"] = str(ov)
+        else:
+            env["SPINNER_MAP_FILE"] = str(self.tmp / "no-overlay.json")
+        if style:
+            env["SPINNER_STYLE"] = style
+        return subprocess.run([sys.executable, str(PY_SCRIPT), *args],
+                              capture_output=True, text=True, env=env)
+
+    def test_overlay_pool_replaces_labels(self):
+        overlay = '{"pools": {"9": ["탐색중", "추리중"]}}'
+        r = self.run_py(str(self.bin), overlay=overlay)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        data = self.bin.read_bytes()
+        self.assertIn("탐색중".encode(), data)
+        self.assertNotIn("준비중".encode(), data)  # 기본 9B 풀은 사용 안 됨
+
+    def test_overlay_override_pins_single_verb(self):
+        overlay = '{"overrides": {"Pondering": "궁리중"}}'
+        r = self.run_py(str(self.bin), overlay=overlay)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("궁리중".encode(), self.bin.read_bytes())
+
+    def test_overlay_invariant_violation_rejected(self):
+        """9B 풀에 12B 라벨 → exit 2 + 바이너리 무변경."""
+        before = self.bin.read_bytes()
+        overlay = '{"pools": {"9": ["너무긴라벨"]}}'
+        r = self.run_py(str(self.bin), overlay=overlay)
+        self.assertEqual(r.returncode, 2)
+        self.assertEqual(self.bin.read_bytes(), before)
+
+    def test_overlay_unknown_override_key_rejected(self):
+        """오타 방어 — 존재하지 않는 verb override는 거부."""
+        before = self.bin.read_bytes()
+        overlay = '{"overrides": {"Ponderingg": "궁리중"}}'
+        r = self.run_py(str(self.bin), overlay=overlay)
+        self.assertEqual(r.returncode, 2)
+        self.assertEqual(self.bin.read_bytes(), before)
+
+    def test_overlay_broken_json_rejected(self):
+        before = self.bin.read_bytes()
+        r = self.run_py(str(self.bin), overlay='{broken!!')
+        self.assertEqual(r.returncode, 2)
+        self.assertEqual(self.bin.read_bytes(), before)
+
+    def test_witty_style_env(self):
+        r = self.run_py(str(self.bin), style="witty")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        data = self.bin.read_bytes()
+        self.assertIn("사색중".encode(), data)   # Pondering
+        self.assertIn("춤추기".encode(), data)   # Boogieing
+
+    def test_witty_style_cli_flag(self):
+        r = self.run_py("--style", "witty", str(self.bin))
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("소용돌이".encode(), self.bin.read_bytes())  # Whirlpooling
+
+    def test_witty_map_satisfies_invariant(self):
+        """위트 178개 전부 byte 길이 일치 — 전수 검증."""
+        m = load_module()
+        witty = m.build_verb_map(style="witty")
+        self.assertEqual(len(witty), 178)
+        for en, ko in witty.items():
+            self.assertEqual(len(en.encode()), len(ko.encode()), f"{en} → {ko!r}")
+
+    def test_check_unaffected_by_style(self):
+        r = self.run_py("--check", str(self.bin), style="witty")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertGreater(int(r.stdout.strip()), 0)
+
+
 class TestCli(unittest.TestCase):
     """CLI 계약: --check(조회 전용), 패치 skip, 서명 실패 자동 복구."""
 

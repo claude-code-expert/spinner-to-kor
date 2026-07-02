@@ -88,7 +88,7 @@ fi
 
 # 3. 스크립트 삭제
 bold "== 3) ~/.claude/scripts/ 한국어 스피너 스크립트 제거 =="
-for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py; do
+for f in patch-spinner-verbs.py patch-spinner-verbs.sh auto-patch-claude.sh merge-hooks.py detect-verbs.py; do
   if [[ -f "$SCRIPTS_DEST/$f" ]]; then
     rm -f "$SCRIPTS_DEST/$f"
     green "✓ 삭제: $f"
