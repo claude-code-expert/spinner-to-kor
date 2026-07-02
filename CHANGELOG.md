@@ -1,6 +1,26 @@
 # Changelog
 
-## 2.1.0 — 2026-07-02 (원격 배포)
+## 0.0.1 — 2026-07-02 (첫 공개 릴리스)
+
+첫 배포. 아래 기능 전체를 포함한다:
+
+- **3-레이어 한국어 스피너**: PreToolUse hook 20개(도구별 한국어 라벨) + 바이너리 verb 178개 한국어 치환(byte 불변식 + ad-hoc 재서명) + 자동 재패치.
+- **무간섭 설치/업데이트/제거**: 사용자 `settings.json` hook 보존, 구버전 in-place 업그레이드, 실패 시 무변경. 바이너리 백업·복원.
+- **프로젝트 스코프**(`--project`) + **단일 CLI**(`spinner-to-kor <install|uninstall|update|verify|patch|status>`).
+- **매핑 확장**: 신규 verb 자동 감지·경보, 커스텀 오버레이(`~/.claude/spinner-map.json`), semantic/witty 스타일.
+- **플랫폼**: macOS(LaunchAgent) · Linux/WSL(systemd path unit) · GitHub Actions CI(ubuntu+macos).
+- **원격 한 줄 설치**: `curl … bootstrap.sh | bash`, 자립 update/uninstall(스냅샷 + PATH 진입점).
+- 테스트 하네스 8스위트(fixture 기반, 실기 격리), shellcheck 클린.
+
+세부 구현 이력은 아래 "개발 마일스톤" 및 git 이력 참고.
+
+---
+
+## 개발 마일스톤 (내부 이력 — 정식 릴리스 아님)
+
+> 아래 버전 번호(1.0.0~2.1.0)는 개발 중 마일스톤 표기였으며 배포되지 않았다. 첫 정식 배포는 위 0.0.1.
+
+## 2.1.0 (M5) — 원격 배포
 
 - **한 줄 설치** (`bootstrap.sh`): `curl -fsSL .../bootstrap.sh | bash` — GitHub 최신 release tarball 을 받아 설치. Node/npm 의존 없음(순수 bash+python3). `SPINNER_REPO`·`SPINNER_SOURCE_TARBALL` env 로 포크·오프라인 지원.
 - **자립 update/uninstall**: install 시 배포 스냅샷을 `~/.claude/spinner-to-kor/` 에 보관하고 `~/.local/bin/spinner-to-kor` PATH 진입점을 심는다. `spinner-to-kor update` = 부트스트랩 재실행(최신 release, 무간섭), `uninstall` = 스냅샷·진입점까지 정리. curl 설치 후 소스 디렉터리 없이도 전 명령 동작.

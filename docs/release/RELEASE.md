@@ -79,24 +79,18 @@ spinner-to-kor verify      # 6항목 전부 ✓
 
 ## 4. 최초 배포 (현재 상황)
 
-로컬에 태그 `v1.0.0`~`v2.1.0` 5개가 있으나 **원격 push·Release 발행은 아직 안 됨**. 한 줄 설치가 동작하려면 최소 **최신 태그 1개의 Release 가 필요**하다.
+첫 정식 배포는 **v0.0.1** 이다. 개발 중 붙였던 마일스톤 태그(1.0.0~2.1.0)는 배포된 적 없어 폐기했다 — 실제 사용자가 없는 도구를 1.0.0 으로 시작하지 않는다. 한 줄 설치가 동작하려면 **v0.0.1 Release 발행이 필요**하다.
 
 ```bash
-# 1. 브랜치 + 태그 전부 원격 반영
+# 1. 브랜치 + 태그 원격 반영
 git push origin main --tags
 
-# 2. 최신 버전 Release 발행 (부트스트랩은 latest 만 받으므로 이것만으로 설치 가능)
-gh release create v2.1.0 --title "v2.1.0" \
-  --notes "$(awk '/^## 2\.1\.0/{f=1;next} /^## /{f=0} f' CHANGELOG.md)"
-
-# (선택) 과거 버전도 이력용으로 발행하려면 각 태그 반복
-for v in 1.0.0 1.1.0 1.2.0 2.0.0; do
-  gh release create "v$v" --title "v$v" \
-    --notes "$(awk -v ver="$v" '$0 ~ "^## " ver {f=1;next} /^## /{f=0} f' CHANGELOG.md)"
-done
+# 2. 첫 Release 발행 (부트스트랩은 latest 만 받으므로 이것만으로 설치 활성화)
+gh release create v0.0.1 --title "v0.0.1" \
+  --notes "$(awk '/^## 0\.0\.1/{f=1;next} /^## /{f=0} f' CHANGELOG.md)"
 ```
 
-과거 버전 Release 는 없어도 설치엔 지장 없다(부트스트랩은 latest 만 사용). 이력·재현 목적이면 발행.
+이후 버전은 SemVer(§2)에 따라 올린다. 안정화되면 0.x → 1.0.0 으로 승격.
 
 ## 5. 롤백
 
