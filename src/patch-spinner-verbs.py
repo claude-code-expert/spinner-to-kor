@@ -403,6 +403,10 @@ def main() -> int:
     parser.add_argument("binary", nargs="?", help="대상 바이너리 (생략 시 자동 탐지)")
     parser.add_argument("--check", action="store_true",
                         help="조회 전용 — 영문 sentinel 수를 stdout에 출력, 무수정")
+    parser.add_argument("--list", action="store_true",
+                        help="활성 매핑 178개를 정의 순서대로 출력 (스타일·오버레이 반영, 무수정)")
+    parser.add_argument("--demo", type=int, nargs="?", const=8, default=None, metavar="N",
+                        help="한국어 라벨 N개(기본 8)를 터미널 스피너 애니메이션으로 미리보기")
     parser.add_argument("--style", choices=["semantic", "witty"], default=None,
                         help="매핑 스타일 (기본 semantic)")
     args = parser.parse_args()
@@ -410,6 +414,38 @@ def main() -> int:
     if args.style:
         VERB_MAP = build_verb_map(style=args.style)
     validate_map()
+
+    if args.list:
+        # 바이너리 불필요 — 정의 순서(byte 길이 오름차순, 풀 라운드로빈) 그대로 출력
+        cur = 0
+        for en, ko in VERB_MAP.items():
+            n = len(en.encode("utf-8"))
+            if n != cur:
+                cur = n
+                print(f"== {cur}B ==")
+            print(f"{en:<18} → {ko.rstrip()}")
+        return 0
+
+    if args.demo:
+        # 패치 없이 라벨 체감용 — 중복 제거한 라벨을 정의 순서대로 N개 애니메이션
+        import time
+        frames = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
+        labels: list[str] = []
+        for ko in VERB_MAP.values():
+            if ko.rstrip() not in labels:
+                labels.append(ko.rstrip())
+            if len(labels) >= args.demo:
+                break
+        try:
+            for ko in labels:
+                for f in frames:
+                    print(f"\r{f} {ko}… ", end="", flush=True)
+                    time.sleep(0.08)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            print(f"\r✓ 라벨 {len(labels)}개 미리보기 완료      ")
+        return 0
 
     if args.binary:
         binary_path = Path(args.binary).expanduser().resolve()

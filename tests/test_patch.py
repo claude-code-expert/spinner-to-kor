@@ -255,6 +255,29 @@ class TestOverlayAndStyle(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertGreater(int(r.stdout.strip()), 0)
 
+    def test_list_prints_178_in_definition_order(self):
+        """--list: 바이너리 없이 정의 순서(byte 길이 오름차순) 출력, 무수정."""
+        r = self.run_py("--list")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        lines = [l for l in r.stdout.splitlines() if "→" in l]
+        self.assertEqual(len(lines), 178)
+        self.assertLess(r.stdout.index("Baking"), r.stdout.index("Pondering"))
+        self.assertLess(r.stdout.index("Pondering"), r.stdout.index("Whatchamacalliting"))
+
+    def test_demo_runs_without_binary(self):
+        """--demo N: 바이너리 없이 라벨 N개 애니메이션 후 정상 종료."""
+        r = self.run_py("--demo", "1")
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("추론", r.stdout)          # 첫 라벨 (정의 순서)
+        self.assertIn("미리보기 완료", r.stdout)
+
+    def test_list_reflects_style_and_overlay(self):
+        r = self.run_py("--list", "--style", "witty",
+                        overlay='{"overrides": {"Pondering": "궁리중"}}')
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn("궁리중", r.stdout)   # 오버레이 반영
+        self.assertIn("소용돌이", r.stdout)  # witty: Whirlpooling
+
 
 class TestCli(unittest.TestCase):
     """CLI 계약: --check(조회 전용), 패치 skip, 서명 실패 자동 복구."""

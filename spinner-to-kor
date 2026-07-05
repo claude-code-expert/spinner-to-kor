@@ -27,6 +27,8 @@ commands:
   update                                    무간섭 업데이트 (install --update 동일)
   verify                                    설치 상태 6항목 진단
   patch [BINARY]                            바이너리 수동 패치 (생략 시 자동 탐지)
+  map [--style witty]                       활성 매핑 178개를 차례대로 출력
+  demo [N] [--style witty]                  한국어 라벨 N개(기본 8) 스피너 미리보기
   status                                    설치 버전·패치 상태·LaunchAgent 한눈 요약
   help                                      이 도움말
 
@@ -85,6 +87,12 @@ case "$CMD" in
     ;;
   verify)         exec "$REPO_DIR/verify.sh" "$@" ;;
   patch)          exec "$REPO_DIR/src/patch-spinner-verbs.sh" "$@" ;;
+  map)            exec python3 "$REPO_DIR/src/patch-spinner-verbs.py" --list "$@" ;;
+  demo)
+    N="8"
+    if [[ "${1:-}" =~ ^[0-9]+$ ]]; then N="$1"; shift; fi
+    exec python3 "$REPO_DIR/src/patch-spinner-verbs.py" --demo "$N" "$@"
+    ;;
   status)         status_cmd ;;
   help|-h|--help) usage ;;
   *)
