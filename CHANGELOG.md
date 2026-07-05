@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0 — 2026-07-05
+
+- **동작별 verb 풀 교체 — 공식 `spinnerVerbs` 설정 적용**: Claude Code 2.1.x가 settings.json `spinnerVerbs`(`mode:"replace"`)를 공식 지원함을 확인(바이너리 역분석). install 머지 시 동작별 한국어 라벨 25개(`파일 리팩토링중`, `명령어 실행중`, `테스트 실행중`, `디버깅중` 등)를 자동 적용 — 설정 경로라 **byte 불변식 제약 없음**. 사용자 자작 `spinnerVerbs`는 보존(FR-17), uninstall 시 우리 것만 제거. 라벨 목록을 바꾸는 릴리스는 직전 목록을 `LEGACY_VERB_SETS`에 추가할 것. 참고: verb는 응답 턴당 랜덤 1개 선택 후 고정(Claude Code 내부 동작) — 활동 연동 아님.
+- **`map`·`demo` 서브커맨드**: 활성 매핑 178개 정의 순서 출력(`map [--style witty]`), 라벨 스피너 애니메이션 미리보기(`demo [N]`). 조회 전용, 바이너리 불필요.
+
 ## 0.0.1 — 2026-07-02 (첫 공개 릴리스)
 
 첫 배포. 아래 기능 전체를 포함한다:
