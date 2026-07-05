@@ -104,6 +104,7 @@ if [[ "$RESTORE_BIN" == "1" ]]; then
       [[ -f "$bin" ]] || continue
       case "$bin" in *.bak.*|*.tmp) continue;; esac
       # 같은 prefix .bak 중 가장 오래된 (깨끗한 원본 추정)
+      # shellcheck disable=SC2012  # bak 파일명은 자체 생성 고정 패턴(.bak.YYYYmmdd-HHMMSS) — 특수문자 없음
       OLDEST_BAK="$(ls -1tr "${bin}".bak.* 2>/dev/null | head -1 || true)"
       if [[ -n "$OLDEST_BAK" && -f "$OLDEST_BAK" ]]; then
         cp -p "$OLDEST_BAK" "$bin"
